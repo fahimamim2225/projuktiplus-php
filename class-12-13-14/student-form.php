@@ -35,7 +35,7 @@
             font-weight: bold;
             margin-bottom: 8px;
         }
-        input[type="text"], input[type="email"], select {
+        input[type="text"], input[type="email"], select, textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
@@ -76,7 +76,7 @@
         </div>
 
         <?php
-            $name = $email = $phone = $gender = $subject = '';
+            $name = $email = $phone = $student_id = $dob = $gender = $subject = $address = $photo = '';
             $students = [];
             $errors = [];
             $success = "";
@@ -85,8 +85,12 @@
                 $name = htmlspecialchars($_POST['name']);
                 $email = htmlspecialchars($_POST['email']);
                 $phone = htmlspecialchars($_POST['phone']);
+                $student_id = htmlspecialchars($_POST['student_id']);
+                $dob = htmlspecialchars($_POST['dob']);
                 $gender = htmlspecialchars($_POST['gender'] ?? '');
                 $subject = htmlspecialchars($_POST['subject'] ?? '');
+                $address = htmlspecialchars($_POST['address']);
+                $photo = htmlspecialchars($_FILES['photo']['name']);
 
                 if (session_status() == PHP_SESSION_NONE) {
                     session_start();
@@ -96,31 +100,29 @@
                     $_SESSION['students'] = [];
                 }
 
-                if (empty($name)) {
-                    $errors['name'] = "Name is required";
-                }
-                if (empty($email)) {
-                    $errors['email'] = "Email is required";
-                } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $errors['email'] = "Invalid email format";
-                }
-                if (empty($phone)) {
-                    $errors['phone'] = "Phone number is required";
-                }
-                if (empty($gender)) {
-                    $errors['gender'] = "Gender is required";
-                }
-                if (empty($subject)) {
-                    $errors['subject'] = "Subject is required";
-                }
+                if ( empty($name) ) $errors['name'] = "Name is required";
+                
+                if ( empty($email) ) $errors['email'] = "Email is required";
+                elseif ( !filter_var($email, FILTER_VALIDATE_EMAIL) ) $errors['email'] = "Invalid email format";
+                
+                if ( empty($phone) ) $errors['phone'] = "Phone number is required";
+                
+                if ( empty($gender) ) $errors['gender'] = "Gender is required";
+                
+                if ( empty($subject) ) $errors['subject'] = "Subject is required";
+                
 
                 if (empty($errors)) {
                     $newStudent = [
                         'name' => $name,
                         'email' => $email,
                         'phone' => $phone,
+                        'student_id' => $student_id,
+                        'dob' => $dob,
                         'gender' => $gender,
-                        'subject' => $subject
+                        'subject' => $subject,
+                        'address' => $address,
+                        'photo' => $photo
                     ];
                     array_push($_SESSION['students'], $newStudent);
                     $success = "New student added successfully!";
@@ -144,7 +146,7 @@
                 <p style="color: green;"><?php echo $success ?></p>
             <?php endif; ?>
 
-            <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+            <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="name">Full Name</label>
                     <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name); ?>">
@@ -170,9 +172,25 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="phone">Student ID</label>
+                    <input type="text" id="student_id" name="student_id" value="<?php echo htmlspecialchars($student_id); ?>">
+                    <?php if (isset($errors['student_id'])): ?>
+                        <p style="color: red;"><?php echo $errors['student_id']; ?></p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="form-group">
+                    <label for="dob">Date of Birth</label>
+                    <input type="date" id="dob" name="dob" value="<?php echo htmlspecialchars($dob); ?>">
+                    <?php if (isset($errors['dob'])): ?>
+                        <p style="color: red;"><?php echo $errors['dob']; ?></p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="form-group">
                     <label>Gender:</label>
-                    <label><input type="radio" name="gender" value="Male" <?php if ($gender == "Male") echo "checked"; ?>> Male</label>
-                    <label><input type="radio" name="gender" value="Female" <?php if ($gender == "Female") echo "checked"; ?>> Female</label>
+                    <label><input type="radio" name="gender" value="Male" <?php if ($gender == "Male") echo "checked"; ?> > Male</label>
+                    <label><input type="radio" name="gender" value="Female" <?php if ($gender == "Female") echo "checked"; ?> > Female</label>
                     <?php if (isset($errors['gender'])): ?>
                         <p style="color: red;"><?php echo $errors['gender']; ?></p>
                     <?php endif; ?>
@@ -182,14 +200,31 @@
                     <label for="subject">Subject</label>
                     <select name="subject" id="subject">
                         <option value="">Select Subject</option>
-                        <option value="Science" <?php if ($subject == "Science") echo "selected"; ?>>Science</option>
-                        <option value="Arts" <?php if ($subject == "Arts") echo "selected"; ?>>Arts</option>
-                        <option value="Commerce" <?php if ($subject == "Commerce") echo "selected"; ?>>Commerce</option>
+                        <option value="Science" <?php if ( $subject == "Science" ) echo "selected"; ?> >Science</option>
+                        <option value="Arts" <?php if ($subject == "Arts") echo "selected"; ?> >Arts</option>
+                        <option value="Commerce" <?php if ($subject == "Commerce") echo "selected"; ?> >Commerce</option>
                     </select>
                     <?php if (isset($errors['subject'])): ?>
                         <p style="color: red;"><?php echo $errors['subject']; ?></p>
                     <?php endif; ?>
                 </div>
+
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea name="address" id="address" value="<?php echo htmlspecialchars($address); ?>"></textarea>
+                    <?php if (isset($errors['address'])): ?>
+                        <p style="color: red;"><?php echo $errors['address']; ?></p>
+                    <?php endif; ?>
+                </div>
+
+                <div class="form-group">
+                    <label for="photo">Photo</label>
+                    <input type="file" id="photo" name="photo">
+                    <?php if (isset($errors['photo'])): ?>
+                        <p style="color: red;"><?php echo $errors['photo']; ?></p>
+                    <?php endif; ?>
+                </div>
+
 
                 <button type="submit" name="submit" class="submit-btn">Submit</button>
             </form>
@@ -202,12 +237,16 @@
                     <th>Name</th>
                     <th>Email</th>
                     <th>Phone</th>
+                    <th>Student ID</th>
+                    <th>Date of Birth</th>
                     <th>Gender</th>
                     <th>Subject</th>
+                    <th>Address</th>
+                    <th>Photo</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($students)): ?>
+                <?php if ( empty($students) ): ?>
                     <tr>
                         <td colspan="5">No student data submitted yet.</td>
                     </tr>
@@ -217,8 +256,12 @@
                             <td><?php echo htmlspecialchars($student['name']); ?></td>
                             <td><?php echo htmlspecialchars($student['email']); ?></td>
                             <td><?php echo htmlspecialchars($student['phone']); ?></td>
+                            <td><?php echo htmlspecialchars($student['student_id']); ?></td>
+                            <td><?php echo htmlspecialchars($student['dob']); ?></td>
                             <td><?php echo htmlspecialchars($student['gender'] ?? ''); ?></td>
                             <td><?php echo htmlspecialchars($student['subject'] ?? ''); ?></td>
+                            <td><?php echo htmlspecialchars($student['address']); ?></td>
+                            <td><?php echo htmlspecialchars($student['photo']); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
